@@ -68,14 +68,6 @@ grep -rlZ --include='*.java' 'jdbc:h2:' src/main \
 echo "=== H2 mit dem offiziellen Build-Skript bauen ==="
 export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
 export PATH="$JAVA_HOME/bin:$PATH"
-
-echo "=== Build-Umgebung ==="
-java -version
-mvn -version
-
-echo "=== Suche nach fehlerhaften Maven-Koordinaten ==="
-grep -RIn --exclude-dir=.git \
-  'javax/servlet:javax.servlet-api:4.0.1' .
                                                  
 bash ./build.sh jar
 

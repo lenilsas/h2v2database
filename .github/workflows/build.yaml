@@ -27,6 +27,11 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Maven einrichten
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: '3.8.7'
+
       - name: H2v2 bauen
         run: mvn --batch-mode clean package
 

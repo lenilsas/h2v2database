@@ -1,0 +1,145 @@
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>h2-patch-v2</groupId>
+    <artifactId>h2v2-build</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.release>11</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        
+        <h2.version>2.5.250</h2.version>
+
+        <h2.tag>version-${h2.version}</h2.tag>
+        <h2.patched.version>${h2.version}-patched</h2.patched.version>
+    </properties>
+
+    <build>
+        <finalName>h2v2-${h2.version}</finalName>
+    </build>
+
+    <profiles>
+<!--        Herunterladen, patchen und bauen-->
+        <profile>
+            <id>build-h2</id>
+
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+
+                        <executions>
+                            <execution>
+                                <id>build-patched-h2</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument><![CDATA[
+set -eu
+SRC="$PWD/target/h2-src"
+
+echo "=== H2-Quellcode herunterladen ==="
+rm -rf "$SRC"
+git clone --depth 1 --branch "${h2.tag}" https://github.com/h2database/h2database.git "$SRC"
+cd "$SRC/h2"
+
+echo "=== JDBC-URL-Präfix im Quellcode ändern ==="
+grep -rlZ --include='*.java' 'jdbc:h2:' src/main \
+  | xargs -0 -r sed -i 's/jdbc:h2:/jdbc:h2v2:/g'
+
+echo "=== H2 mit dem offiziellen Build-Skript bauen ==="
+export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+export PATH="$JAVA_HOME/bin:$PATH"
+bash ./build.sh jar
+
+JAR="$SRC/h2/bin/h2-${h2.version}.jar"
+
+test -f "$JAR" || {
+  echo "H2-JAR nicht gefunden: $JAR"
+  exit 1
+}
+                                        ]]></argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+<!--                    Das erzeugte H2-JAR installieren                -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-install-plugin</artifactId>
+                        <version>3.1.4</version>
+
+                        <executions>
+                            <execution>
+                                <id>install-patched-h2</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>install-file</goal>
+                                </goals>
+
+                                <configuration>
+                                    <file>${project.build.directory}/h2-src/h2/bin/h2-${h2.version}.jar</file>
+                                    <groupId>local.patch</groupId>
+                                    <artifactId>h2-patched</artifactId>
+                                    <version>${h2.patched.version}</version>
+                                    <packaging>jar</packaging>
+                                    <generatePom>true</generatePom>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    
+<!--                    Von h2 zu h2v2 patchen-->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.6.2</version>
+
+                        <executions>
+                            <execution>
+                                <id>relocate-h2-packages</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <createDependencyReducedPom>false</createDependencyReducedPom>
+
+                                    <relocations>
+                                        <relocation>
+                                            <pattern>org.h2</pattern>
+                                            <shadedPattern>org.h2v2</shadedPattern>
+                                        </relocation>
+                                    </relocations>
+                                    <transformers>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                    </transformers>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

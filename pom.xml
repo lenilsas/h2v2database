@@ -21,7 +21,7 @@
     </properties>
 
     <build>
-        <finalName>h2v2-${h2.version}</finalName>
+        <finalName>h2v2</finalName>
     </build>
 
     <profiles>

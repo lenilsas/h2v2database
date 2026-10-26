@@ -23,7 +23,7 @@
 
         <plugins>
 
-            <!-- 1) H2 mit patchen und bauen -->
+            <!-- 1) H2 per git laden, patchen (jdbc:h2: zu jdbc:h2v2:) und bauen -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -96,7 +96,7 @@ test -f "$JAR" || {
                 </executions>
             </plugin>
 
-            <!-- 3) Wenn du wirklich ein sogenanntes "shaded" Jar willst -->
+            <!-- 3) Jar "shaden" von org.h2 zu org.h2v2 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>

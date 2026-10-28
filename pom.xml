@@ -54,6 +54,20 @@ echo "=== JDBC-URL-Präfix im Quellcode ändern ==="
 grep -rlZ --include='*.java' 'jdbc:h2:' src/main \
   | xargs -0 -r sed -i 's/jdbc:h2:/jdbc:h2v2:/g'
 
+echo "=== MVStore-Klassennamen patchen ==="
+META="$SRC/h2/src/main/org/h2/mvstore/type/MetaType.java"
+sed -i \
+  's/String className = clazz.getName();/String className = clazz.getName().replace(String.join("h","org.","2v2."), String.join("h","org.","2."));/' \
+  "$META"
+
+sed -i \
+  's/Class<?> clazz = Class.forName(className);/Class<?> clazz = Class.forName(className.replace(String.join("h","org.","2."), String.join("h","org.","2v2.")));/' \
+  "$META"
+
+echo "=== Kontrolle des Patches ==="
+grep -F 'String className = clazz.getName().replace(String.join("h","org.","2v2."), String.join("h","org.","2."));' "$META"
+grep -F 'Class<?> clazz = Class.forName(className.replace(String.join("h","org.","2."), String.join("h","org.","2v2.")));' "$META"
+
 echo "=== H2 bauen ==="
 export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
 export PATH="$JAVA_HOME/bin:$PATH"

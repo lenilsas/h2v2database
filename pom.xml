@@ -9,6 +9,8 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
+
+<!-- renovate: datasource=github-tags depName=h2database/h2database extractVersion=^version-(?<version>.*)$ -->
     <properties>
         <maven.compiler.release>11</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,7 +21,7 @@
 
     <build>
         <!-- final artifact name -->
-        <finalName>h2v2</finalName>
+        <finalName>h2v2-${h2.version}</finalName>
 
         <plugins>
 
@@ -102,7 +104,7 @@ test -f "$JAR" || {
                             <target>
                                 <copy
                                     file="${project.build.directory}/h2-src/h2/bin/h2-${h2.version}.jar"
-                                    tofile="${project.build.directory}/h2v2.jar"
+                                    tofile="${project.build.directory}/h2v2-${h2.version}.jar"
                                     overwrite="true"/>
                             </target>
                         </configuration>
@@ -126,7 +128,7 @@ test -f "$JAR" || {
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <shadedArtifactAttached>false</shadedArtifactAttached>
-                            <finalName>h2v2</finalName>
+                            <finalName>h2v2-${h2.version}</finalName>
 
                             <relocations>
                                 <relocation>

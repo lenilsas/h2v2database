@@ -1,20 +1,32 @@
+
 name: Build H2v2
 
 on:
-  push:
-    tags:
-      - 'v*'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   build:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.pull_request.merged == true &&
+        github.event.pull_request.user.login == 'renovate[bot]'
+      )
+
     runs-on: ubuntu-latest
 
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Java einrichten
         uses: actions/setup-java@v5
@@ -28,18 +40,44 @@ jobs:
         with:
           maven-version: '3.8.7'
 
+      - name: H2-Version ermitteln
+        id: version
+        run: |
+          VERSION=$(sed -n 's/.*<h2.version>\(.*\)<\/h2.version>.*/\1/p' pom.xml | head -n 1)
+
+          if [ -z "$VERSION" ]; then
+            echo "FEHLER: H2-Version nicht gefunden"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "jar=target/h2v2-$VERSION.jar" >> "$GITHUB_OUTPUT"
+
       - name: H2v2 bauen
         run: mvn clean package
 
       - name: JAR als Artifact hochladen
         uses: actions/upload-artifact@v4
         with:
-          name: h2v2
-          path: target/h2v2.jar
+          name: h2v2-${{ steps.version.outputs.version }}
+          path: ${{ steps.version.outputs.jar }}
           if-no-files-found: error
 
-      - name: GitHub Release erstellen
-        uses: softprops/action-gh-release@v2
-        with:
-          files: target/h2v2.jar
-          generate_release_notes: true
+      - name: GitHub Release erstellen oder aktualisieren
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          JAR: ${{ steps.version.outputs.jar }}
+        run: |
+          TAG="h2v2-$VERSION"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG existiert bereits."
+          else
+            gh release create "$TAG" \
+              --title "H2v2 $VERSION" \
+              --notes "H2v2 build based on H2 $VERSION"
+          fi
+
+          gh release upload "$TAG" "$JAR" --clobber
+

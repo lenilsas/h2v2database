@@ -15,7 +15,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
              
 <!-- renovate: datasource=github-tags depName=h2database/h2database extractVersion=^version-(?<version>.*)$ -->
-        <h2.version>2.5.250</h2.version>
+        <h2.version>2.5.252</h2.version>
         <h2.tag>version-${h2.version}</h2.tag>
     </properties>
 

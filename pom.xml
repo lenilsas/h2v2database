@@ -10,11 +10,11 @@
     <packaging>jar</packaging>
 
 
-<!-- renovate: datasource=github-tags depName=h2database/h2database extractVersion=^version-(?<version>.*)$ -->
     <properties>
         <maven.compiler.release>11</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
+             
+<!-- renovate: datasource=github-tags depName=h2database/h2database extractVersion=^version-(?<version>.*)$ -->
         <h2.version>2.5.250</h2.version>
         <h2.tag>version-${h2.version}</h2.tag>
     </properties>

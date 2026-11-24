@@ -63,6 +63,35 @@ jobs:
           path: ${{ steps.version.outputs.jar }}
           if-no-files-found: error
 
+      - name: Maven-Artefakt veröffentlichen
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          JAR: ${{ steps.version.outputs.jar }}
+        run: |
+          mvn org.apache.maven.plugins:maven-deploy-plugin:3.1.4:deploy-file \
+            -DgroupId=com.h2database \
+            -DartifactId=h2v2 \
+            -Dversion="$VERSION" \
+            -Dpackaging=jar \
+            -Dfile="$JAR" \
+            -DgeneratePom=true \
+            -Durl="file://$GITHUB_WORKSPACE/maven-repo" \
+            -DrepositoryId=local
+
+      - name: Maven-Repository veröffentlichen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add maven-repo
+
+          if git diff --cached --quiet; then
+            echo "Keine Änderungen am Maven-Repository."
+          else
+            git commit -m "Publish H2v2 Maven artifact"
+            git push origin main
+          fi
+
       - name: GitHub Release erstellen oder aktualisieren
         env:
           GH_TOKEN: ${{ github.token }}
@@ -80,4 +109,3 @@ jobs:
           fi
 
           gh release upload "$TAG" "$JAR" --clobber
-
